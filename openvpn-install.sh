@@ -185,6 +185,8 @@ if [[ -e /etc/openvpn/server/server.conf ]]; then
 				rm -rf /etc/openvpn/server
 				rm -f /etc/systemd/system/openvpn-server@server.service.d/disable-limitnproc.conf
 				rm -f /etc/sysctl.d/30-openvpn-forward.conf
+				rm /usr/bin/ovpn-client-connect
+				rm /usr/bin/ovpn-client-disconnect
 				if [[ "$os" = "debian" ]]; then
 					apt-get remove --purge -y openvpn
 				else
@@ -223,7 +225,7 @@ else
 		[[ -z "$ip_number" ]] && ip_number="1"
 		ip=$(ip -4 addr | grep inet | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | sed -n "$ip_number"p)
 	fi
-	# If $ip is a private IP address, the server must be behind NAT
+	# If $ip is a private IP address, the server must be behind NAT
 	if echo "$ip" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
 		echo
 		echo "This server is behind NAT. What is the public IPv4 address or hostname?"
@@ -519,23 +521,23 @@ verb 3" > /etc/openvpn/server/client-common.txt
 		echo '#!/usr/bin/env python' > /usr/bin/ovpn-client-connect
 		echo 'import telegram' >> /usr/bin/ovpn-client-connect
 		echo 'import os' >> /usr/bin/ovpn-client-connect
-		echo "bot = telegram.Bot(token=\'$telegram_bot_token\')" >> /usr/bin/ovpn-client-connect
+		echo "bot = telegram.Bot(token='$telegram_bot_token')" >> /usr/bin/ovpn-client-connect
 		echo "server_ip = os.popen('curl ifconfig.me').read()" >> /usr/bin/ovpn-client-connect
 		echo "client_name = str(os.getenv('common_name'))" >> /usr/bin/ovpn-client-connect
 		echo "client_real_ip = str(os.getenv('trusted_ip'))" >> /usr/bin/ovpn-client-connect
 		echo "client_virtual_ip = str(os.getenv('ifconfig_pool_remote_ip'))" >> /usr/bin/ovpn-client-connect
 		echo 'message = "*[OpenVPN Server : " + server_ip + "]* client *" + client_name + "* is connected (is *" + client_real_ip + "* and has *" + client_virtual_ip + "*)"' >> /usr/bin/ovpn-client-connect
-		echo "bot.send_message('-123456789', message, parse_mode=telegram.ParseMode.MARKDOWN)" >> /usr/bin/ovpn-client-connect
+		echo "bot.send_message('$telegram_group_id', message, parse_mode=telegram.ParseMode.MARKDOWN)" >> /usr/bin/ovpn-client-connect
 		echo '#!/usr/bin/env python' > /usr/bin/ovpn-client-disconnect
 		echo 'import telegram' >> /usr/bin/ovpn-client-disconnect
 		echo 'import os' >> /usr/bin/ovpn-client-disconnect
-		echo "bot = telegram.Bot(token=\'$telegram_bot_token\')" >> /usr/bin/ovpn-client-disconnect
+		echo "bot = telegram.Bot(token='$telegram_bot_token')" >> /usr/bin/ovpn-client-disconnect
 		echo "server_ip = os.popen('curl ifconfig.me').read()" >> /usr/bin/ovpn-client-disconnect
 		echo "client_name = str(os.getenv('common_name'))" >> /usr/bin/ovpn-client-disconnect
 		echo "client_real_ip = str(os.getenv('trusted_ip'))" >> /usr/bin/ovpn-client-disconnect
 		echo "client_virtual_ip = str(os.getenv('ifconfig_pool_remote_ip'))" >> /usr/bin/ovpn-client-disconnect
 		echo 'message = "*[OpenVPN Server : " + server_ip + "]* client *" + client_name + "* has disconnected (was *" + client_real_ip + "* and had *" + client_virtual_ip + "*")' >> /usr/bin/ovpn-client-disconnect
-		echo "bot.send_message('-123456789', message, parse_mode=telegram.ParseMode.MARKDOWN)" >> /usr/bin/ovpn-client-disconnect
+		echo "bot.send_message('$telegram_group_id', message, parse_mode=telegram.ParseMode.MARKDOWN)" >> /usr/bin/ovpn-client-disconnect
 		chown nobody:root /usr/bin/ovpn-client-connect /usr/bin/ovpn-client-disconnect
 		chmod +x nobody:root /usr/bin/ovpn-client-connect /usr/bin/ovpn-client-disconnect
 		echo "script-security 2" >> /etc/openvpn/server/server.conf
