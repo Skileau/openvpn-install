@@ -517,8 +517,8 @@ verb 3" > /etc/openvpn/server/client-common.txt
 		echo "  5. In the JSON array, find the message/chat/id negative integer composed of 9 figures, this is your group ID"
 		read -p "What is the group ID ? : " telegram_group_id
 		touch /usr/bin/ovpn-client-connect /usr/bin/ovpn-client-disconnect
-		pip install python-telegram-bot
-		echo '#!/usr/bin/env python' > /usr/bin/ovpn-client-connect
+		pip3 install python-telegram-bot
+		echo '#!/usr/bin/env python3' > /usr/bin/ovpn-client-connect
 		echo 'import telegram' >> /usr/bin/ovpn-client-connect
 		echo 'import os' >> /usr/bin/ovpn-client-connect
 		echo "bot = telegram.Bot(token='$telegram_bot_token')" >> /usr/bin/ovpn-client-connect
@@ -528,7 +528,7 @@ verb 3" > /etc/openvpn/server/client-common.txt
 		echo "client_virtual_ip = str(os.getenv('ifconfig_pool_remote_ip'))" >> /usr/bin/ovpn-client-connect
 		echo 'message = "*[OpenVPN Server : " + server_ip + "]* client *" + client_name + "* is connected (is *" + client_real_ip + "* and has *" + client_virtual_ip + "*)"' >> /usr/bin/ovpn-client-connect
 		echo "bot.send_message('$telegram_group_id', message, parse_mode=telegram.ParseMode.MARKDOWN)" >> /usr/bin/ovpn-client-connect
-		echo '#!/usr/bin/env python' > /usr/bin/ovpn-client-disconnect
+		echo '#!/usr/bin/env python3' > /usr/bin/ovpn-client-disconnect
 		echo 'import telegram' >> /usr/bin/ovpn-client-disconnect
 		echo 'import os' >> /usr/bin/ovpn-client-disconnect
 		echo "bot = telegram.Bot(token='$telegram_bot_token')" >> /usr/bin/ovpn-client-disconnect
