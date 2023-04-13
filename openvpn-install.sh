@@ -518,28 +518,42 @@ verb 3" > /etc/openvpn/server/client-common.txt
 		read -p "What is the group ID ? : " telegram_group_id
 		touch /usr/bin/ovpn-client-connect /usr/bin/ovpn-client-disconnect
 		pip3 install python-telegram-bot
-		echo '#!/usr/bin/env python3' > /usr/bin/ovpn-client-connect
-		echo 'import telegram' >> /usr/bin/ovpn-client-connect
-		echo 'import os' >> /usr/bin/ovpn-client-connect
-		echo "bot = telegram.Bot(token='$telegram_bot_token')" >> /usr/bin/ovpn-client-connect
-		echo "server_ip = os.popen('curl ifconfig.me').read()" >> /usr/bin/ovpn-client-connect
-		echo "client_name = str(os.getenv('common_name'))" >> /usr/bin/ovpn-client-connect
-		echo "client_real_ip = str(os.getenv('trusted_ip'))" >> /usr/bin/ovpn-client-connect
-		echo "client_virtual_ip = str(os.getenv('ifconfig_pool_remote_ip'))" >> /usr/bin/ovpn-client-connect
-		echo 'message = "*[OpenVPN Server : " + server_ip + "]* client *" + client_name + "* is connected (is *" + client_real_ip + "* and has *" + client_virtual_ip + "*)"' >> /usr/bin/ovpn-client-connect
-		echo "bot.send_message('$telegram_group_id', message, parse_mode=telegram.ParseMode.MARKDOWN)" >> /usr/bin/ovpn-client-connect
-		echo '#!/usr/bin/env python3' > /usr/bin/ovpn-client-disconnect
-		echo 'import telegram' >> /usr/bin/ovpn-client-disconnect
-		echo 'import os' >> /usr/bin/ovpn-client-disconnect
-		echo "bot = telegram.Bot(token='$telegram_bot_token')" >> /usr/bin/ovpn-client-disconnect
-		echo "server_ip = os.popen('curl ifconfig.me').read()" >> /usr/bin/ovpn-client-disconnect
-		echo "client_name = str(os.getenv('common_name'))" >> /usr/bin/ovpn-client-disconnect
-		echo "client_real_ip = str(os.getenv('trusted_ip'))" >> /usr/bin/ovpn-client-disconnect
-		echo "client_virtual_ip = str(os.getenv('ifconfig_pool_remote_ip'))" >> /usr/bin/ovpn-client-disconnect
-		echo 'message = "*[OpenVPN Server : " + server_ip + "]* client *" + client_name + "* has disconnected (was *" + client_real_ip + "* and had *" + client_virtual_ip + "*")' >> /usr/bin/ovpn-client-disconnect
-		echo "bot.send_message('$telegram_group_id', message, parse_mode=telegram.ParseMode.MARKDOWN)" >> /usr/bin/ovpn-client-disconnect
+		cat << EOF | sed 's/$telegram_bot_token/'$telegram_bot_token'/g' | sed 's/$telegram_group_id/'$telegram_group_id'/g' > /usr/bin/ovpn-client-connect
+		#!/usr/bin/env python3
+		import requests
+		import os
+		botToken = '$telegram_bot_token'
+		server_ip = os.popen('curl ifconfig.me').read()
+		client_name = str(os.getenv('common_name'))
+		client_real_ip = str(os.getenv('trusted_ip'))
+		client_virtual_ip = str(os.getenv('ifconfig_pool_remote_ip'))
+		message = "*[OpenVPN Server : " + server_ip + "]* client *" + client_name + "* is connected (is *" + client_real_ip + "* and has *" + client_virtual_ip + "*)"
+		message = message.replace(".","\\.")
+		message = message.replace("(","\\(")
+		message = message.replace(")","\\)")
+		postBody = {"chat_id":"$telegram_group_id","text":message, "parse_mode":"MarkdownV2"}
+		url = "https://api.telegram.org/bot" + botToken + "/sendMessage"
+		x = requests.post(url, json = postBody)
+		EOF
+		cat << EOF | sed 's/$telegram_bot_token/'$telegram_bot_token'/g' | sed 's/$telegram_group_id/'$telegram_group_id'/g' > /usr/bin/ovpn-client-disconnect
+		#!/usr/bin/env python3
+		import requests
+		import os
+		botToken = '$telegram_bot_token'
+		server_ip = os.popen('curl ifconfig.me').read()
+		client_name = str(os.getenv('common_name'))
+		client_real_ip = str(os.getenv('trusted_ip'))
+		client_virtual_ip = str(os.getenv('ifconfig_pool_remote_ip'))
+		message = "*[OpenVPN Server : " + server_ip + "]* client *" + client_name + "* has disconnected (was *" + client_real_ip + "* and had *" + client_virtual_ip + "*)"
+		message = message.replace(".","\\.")
+		message = message.replace("(","\\(")
+		message = message.replace(")","\\)")
+		postBody = {"chat_id":"$telegram_group_id","text":message, "parse_mode":"MarkdownV2"}
+		url = "https://api.telegram.org/bot" + botToken + "/sendMessage"
+		x = requests.post(url, json = postBody)
+		EOF
 		chown nobody:root /usr/bin/ovpn-client-connect /usr/bin/ovpn-client-disconnect
-		chmod +x nobody:root /usr/bin/ovpn-client-connect /usr/bin/ovpn-client-disconnect
+		chmod +x /usr/bin/ovpn-client-connect /usr/bin/ovpn-client-disconnect
 		echo "script-security 2" >> /etc/openvpn/server/server.conf
 		echo "client-connect /usr/bin/ovpn-client-connect" >> /etc/openvpn/server/server.conf
 		echo "client-disconnect /usr/bin/ovpn-client-disconnect" >> /etc/openvpn/server/server.conf
